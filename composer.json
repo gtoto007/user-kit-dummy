@@ -1,0 +1,17 @@
+{
+    "name": "toto/user-kit",
+    "description": "This PHP package serves as a demonstrative tool, specifically designed to showcase the essential skills required for a job interview. It highlights the creation of an agnostic PHP package, exception handling, unit testing, management of DTO models, and API interactions. Aimed at demonstrating proficiency in PHP development, it provides a clear example of how to implement and integrate key programming concepts effectively.",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "Toto\\UserKit\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Giuseppe Toto",
+            "email": "giuseppe.toto@gmail.com"
+        }
+    ],
+    "require": {}
+}
