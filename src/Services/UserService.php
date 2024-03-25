@@ -10,8 +10,9 @@ use Toto\UserKit\Repositories\UserRepository;
 class UserService
 {
 
-    public function __construct(private UserRepository $repository)
+    public function __construct(private ?UserRepository $repository = null)
     {
+        $this->repository = $repository ?? new UserRepository();
     }
 
     public function findUserByID(int $id): UserDto
