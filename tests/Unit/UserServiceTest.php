@@ -1,14 +1,16 @@
 <?php
 
+use Toto\UserKit\Exceptions\UserNotFoundException;
+use Toto\UserKit\Repositories\UserRepository;
 use Toto\UserKit\Services\UserService;
 
 it('retrieves a single user by ID', function ($id, $email, $first_name, $last_name, $avatar) {
 
     // Setup
-    $repository = createUserRepository();
+    $repository = createUserRepositoryMock();
     // Act
-    $service = new UserService($repository);
-    $user = $service->findUserByID($id);
+    $service = new UserService(new UserRepository());
+    $user = $service->findUser($id);
 
     // Expect
     expect($user->id)->toEqual($id)
@@ -21,3 +23,23 @@ it('retrieves a single user by ID', function ($id, $email, $first_name, $last_na
         [2, 'janet.weaver@reqres.in', 'Janet', 'Weaver', 'https://reqres.in/img/faces/2-image.jpg'],
         [3, 'emma.wong@reqres.in', 'Emma', 'Wong', 'https://reqres.in/img/faces/3-image.jpg']]
 );
+
+
+it('throws a UserNotFoundException when the userId does not exist', function ($id) {
+
+    // Setup
+    $repository = createUserRepositoryMock();
+    // Act
+    $service = new UserService($repository);
+    $service->findUserOrFail($id);
+
+})->with([4, 5, 6])->throws(UserNotFoundException::class);
+
+it('returns null when the userId does not exist', function ($id) {
+    // Setup
+    $repository = createUserRepositoryMock();
+    // Act
+    $service = new UserService($repository);
+    expect($service->findUser($id))->toBeNull();
+
+})->with([4, 5, 6]);

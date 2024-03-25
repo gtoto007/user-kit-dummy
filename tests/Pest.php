@@ -40,9 +40,8 @@ use Toto\UserKit\Repositories\UserRepository;
 |
 */
 
-function createUserRepository(): UserRepository
+function createUserRepositoryMock(): UserRepository
 {
     return new UserRepository(MockFactory::createHttpClient());
 }
-
 
