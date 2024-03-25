@@ -7,7 +7,6 @@ use GuzzleHttp\Psr7\Response;
 use Mockery;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
-use Toto\UserKit\Repositories\UserRepository;
 
 
 class MockFactory

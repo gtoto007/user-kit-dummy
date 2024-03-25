@@ -25,13 +25,9 @@
 */
 
 use GuzzleHttp\Psr7\HttpFactory;
-use http\Client\Curl\User;
 use Toto\Tests\MockFactory;
 use Toto\UserKit\Repositories\UserRepository;
 
-expect()->extend('toBeOne', function () {
-    return $this->toBe(1);
-});
 
 /*
 |--------------------------------------------------------------------------
@@ -46,8 +42,7 @@ expect()->extend('toBeOne', function () {
 
 function createUserRepository(): UserRepository
 {
-    $httpFactory = new HttpFactory();
-    return new UserRepository(MockFactory::createHttpClient(), $httpFactory, $httpFactory);
+    return new UserRepository(MockFactory::createHttpClient());
 }
 
 
