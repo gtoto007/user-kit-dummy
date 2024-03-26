@@ -3,7 +3,6 @@
 namespace Toto\UserKit\Services;
 
 
-use Exception;
 use Psr\Http\Client\ClientExceptionInterface;
 use Toto\UserKit\DTOs\Paginator;
 use Toto\UserKit\DTOs\UserDto;
@@ -12,9 +11,6 @@ use Toto\UserKit\Repositories\UserRepository;
 
 class UserService
 {
-
-    public const DEFAULT_PAGE = 1;
-    public const DEFAULT_PER_PAGE = 6;
 
     /**
      * @param UserRepository|null $repository
@@ -50,10 +46,10 @@ class UserService
         return $this->mapUserDTO($record);
     }
 
-    public function paginate(int $page = self::DEFAULT_PAGE, int $per_page = self::DEFAULT_PER_PAGE): Paginator
+    public function paginate(int $page = Paginator::DEFAULT_PAGE, int $per_page = Paginator::DEFAULT_PER_PAGE): Paginator
     {
-        $page = $page > 0 ? $page : self::DEFAULT_PAGE;
-        $per_page = $per_page > 0 ? $per_page : self::DEFAULT_PER_PAGE;
+        $page = $page > 0 ? $page : Paginator::DEFAULT_PAGE;
+        $per_page = $per_page > 0 ? $per_page : Paginator::DEFAULT_PER_PAGE;
 
         $response = $this->repository->paginate($page, $per_page);
         return new Paginator(
