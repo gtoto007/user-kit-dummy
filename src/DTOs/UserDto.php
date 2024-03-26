@@ -23,6 +23,7 @@ class UserDto implements JsonSerializable, ArraySerializable
         $output = [
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
+            'email'=>$this->email,
             'avatar' => $this->avatar];
 
         if ($this->id !== null) {

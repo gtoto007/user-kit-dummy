@@ -8,6 +8,7 @@ it('converts to array correctly', function () {
     $expected = [
         'first_name' => 'First',
         'last_name' => 'Last',
+        'email'=>'test@example.com',
         'avatar' => 'avatar.png',
         'id' => 1
     ];
@@ -20,6 +21,7 @@ it('serializes to json correctly', function () {
     $expected = json_encode([
         'first_name' => 'First',
         'last_name' => 'Last',
+        'email'=>'test@example.com',
         'avatar' => 'avatar.png',
         'id' => 1
     ]);
