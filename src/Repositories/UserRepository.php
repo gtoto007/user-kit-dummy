@@ -36,10 +36,22 @@ class UserRepository
         $request = $this->requestFactory->createRequest('GET', self::BASE_URL."/$id");
         $response = $this->httpClient->sendRequest($request);
         $body = json_decode($response->getBody()->getContents());
+        //TODO: add  status code check
         if (! isset($body->data)) {
             throw new UserNotFoundException("user with id $id does not exist");
         }
         return $body->data;
+    }
 
+    public function paginate(int $page = 1, int $perPage = 6)
+    {
+        $queryParams = http_build_query([
+            'page' => $page,
+            'per_page' => $perPage,
+        ]);
+        $request = $this->requestFactory->createRequest('GET', self::BASE_URL.'?'.$queryParams);
+        $response = $this->httpClient->sendRequest($request);
+        //TODO: add check status code
+        return json_decode($response->getBody()->getContents());
     }
 }

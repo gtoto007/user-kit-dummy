@@ -1,15 +1,16 @@
 <?php
 
+use Toto\UserKit\DTOs\UserDto;
 use Toto\UserKit\Exceptions\UserNotFoundException;
-use Toto\UserKit\Repositories\UserRepository;
 use Toto\UserKit\Services\UserService;
 
-it('retrieves a single user by ID', function ($id, $email, $first_name, $last_name, $avatar) {
+it('retrieves a single user by ID', function (int $id, string $email, string $first_name, string $last_name, string $avatar) {
 
     // Setup
     $repository = createUserRepositoryMock();
+    $service = new UserService($repository);
+
     // Act
-    $service = new UserService(new UserRepository());
     $user = $service->findUser($id);
 
     // Expect
@@ -25,21 +26,64 @@ it('retrieves a single user by ID', function ($id, $email, $first_name, $last_na
 );
 
 
-it('throws a UserNotFoundException when the userId does not exist', function ($id) {
+it('throws a UserNotFoundException when the userId does not exist', function ($user_id) {
 
     // Setup
     $repository = createUserRepositoryMock();
-    // Act
     $service = new UserService($repository);
-    $service->findUserOrFail($id);
 
-})->with([4, 5, 6])->throws(UserNotFoundException::class);
+    // Act
+    $service->findUserOrFail($user_id);
 
-it('returns null when the userId does not exist', function ($id) {
+})->with([100, 101, 102, 0, -1])->throws(UserNotFoundException::class);
+
+it('returns null when the userId does not exist', function (int $user_id) {
+
     // Setup
     $repository = createUserRepositoryMock();
-    // Act
     $service = new UserService($repository);
-    expect($service->findUser($id))->toBeNull();
 
-})->with([4, 5, 6]);
+    // Act
+    $user = $service->findUser($user_id);
+
+    // Expect
+    expect($user)->toBeNull();
+
+})->with([100, 101, 102, 0, -1]);
+
+
+it('retrieves a paginated list of users', function (int $page, int $per_page, int $total_pages_expected, array $expected_users) {
+
+    // Setup
+    $repository = createUserRepositoryMock();
+    $service = new UserService($repository);
+    $total_users_expected = 12;
+    $per_page_expected = $per_page > 0 ? $per_page : UserService::DEFAULT_PER_PAGE;
+    $page_expected = $page > 0 ? $page : UserService::DEFAULT_PAGE;
+
+    // Act
+    $paginator = $service->paginate($page, $per_page);
+
+    // Expect
+    expect($paginator->page)->toEqual($page_expected)
+        ->and($paginator->per_page)->toEqual($per_page_expected)
+        ->and($paginator->total_pages)->toEqual($total_pages_expected)
+        ->and($paginator->total)->toEqual($total_users_expected);
+
+    foreach ($paginator->data as $index => $user) {
+        expect($user)->toBeInstanceOf(UserDto::class)
+            ->and($user->last_name)->toEqual($expected_users[$index]);
+    }
+
+})->with([
+    //VALID CASE:
+    [1, 6, 2, ['Bluth', 'Weaver', 'Wong', 'Holt', 'Morris', 'Ramos']],
+    [2, 6, 2, ['Lawson', 'Ferguson', 'Funke', 'Fields', 'Edwards', 'Howell']],
+    [6, 2, 6, ['Edwards', 'Howell']],
+    [1000, 10, 2, []],
+    //INVALID CASE:
+    [0, 2, 6, ['Bluth', 'Weaver']],
+    [-1, 2, 6, ['Bluth', 'Weaver']],
+    [1, 0, 2, ['Bluth', 'Weaver', 'Wong', 'Holt', 'Morris', 'Ramos']],
+    [1, -1, 2, ['Bluth', 'Weaver', 'Wong', 'Holt', 'Morris', 'Ramos']],
+]);
