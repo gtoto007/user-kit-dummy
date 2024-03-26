@@ -12,23 +12,27 @@ use Psr\Http\Message\RequestInterface;
 class MockFactory
 {
 
-    static function createHttpClient()
+    public static function createHttpClient()
     {
         $mockHttpClient = Mockery::mock(ClientInterface::class);
         $mockHttpClient->shouldReceive('sendRequest')
             ->andReturnUsing(function (RequestInterface $request) {
-                if (preg_match('@/api/users/(\d+)$@', $request->getUri()->getPath(), $matches)) {
-                    return self::handleUserIdRequest(userId: $matches[1]);
-                } else if ($request->getUri()->getPath() === '/api/users') {
-                    return self::handleUsersRequest($request);
+                if (preg_match('@/api/users(/(\d+))?$@', $request->getUri()->getPath(), $matches)) {
+                    if (isset($matches[2])) {
+                        return self::mockGetUserResponse(userId: $matches[2]);
+                    } else if ($request->getMethod() == 'GET') {
+                        return self::mockGetUsersResponse($request);
+                    } else if ($request->getMethod() == 'POST') {
+                        return self::mockPostUserResponse($request);
+                    }
                 }
-                return self::createHttpResponse("{}", status: 404);
+                return self::mock404Response();
             });
 
         return $mockHttpClient;
     }
 
-    static function handleUserIdRequest($userId): Response
+    private static function mockGetUserResponse($userId): Response
     {
         $user = self::findStubUser($userId);
         if ($user) {
@@ -37,7 +41,7 @@ class MockFactory
             return self::createHttpResponse("{}");
     }
 
-    static function findStubUser($userId)
+    private static function findStubUser($userId)
     {
         $page = json_decode(self::readFile('Stubs/api-users/page=1&per_page=6.json'), true);
         foreach ($page["data"] as $user) {
@@ -48,23 +52,28 @@ class MockFactory
         return null;
     }
 
+    private static function mock404Response(): Response
+    {
+        return self::createHttpResponse("{}", status: 404);
+    }
 
-    static function readFile($file): string|false
+
+    private static function readFile($file): string|false
     {
         return file_get_contents(__DIR__.'/'.$file);
     }
 
-    static function fileExists($file): bool
+    private static function fileExists($file): bool
     {
         return file_exists(__DIR__.'/'.$file);
     }
 
-    static function createHttpResponse($content, $status = 200): Response
+    private static function createHttpResponse($content, $status = 200): Response
     {
         return new Response($status, [], (new HttpFactory())->createStream($content));
     }
 
-    static function handleUsersRequest(RequestInterface $request): Response
+    private static function mockGetUsersResponse(RequestInterface $request): Response
     {
         $query = $request->getUri()->getQuery();
         $stub_file_path = "Stubs/api-users/{$query}.json";
@@ -78,8 +87,16 @@ class MockFactory
         return self::createHttpResponse($response_body);
     }
 
+    private static function mockPostUserResponse(RequestInterface $request): Response
+    {
+        $requestData = json_decode($request->getBody()->getContents(), true);
+        $userId = rand(1, 1000);
+        $responseData = array_merge(['id' => $userId], $requestData);
+        return self::createHttpResponse(json_encode($responseData));
 
-    static function handleEmptyPageResponse($query): string
+    }
+
+    private static function handleEmptyPageResponse($query): string
     {
         parse_str($query, $params);
         $empty_page = json_decode(self::readFile('Stubs/api-users/empty-page.json'), true);

@@ -5,6 +5,21 @@ use Toto\UserKit\DTOs\UserDto;
 use Toto\UserKit\Exceptions\UserNotFoundException;
 use Toto\UserKit\Services\UserService;
 
+
+describe('createUser', function () {
+    it('creates a new user', function ($first_name, $last_name, $job) {
+        // Setup
+        $repository = createUserRepositoryMock();
+        $service = new UserService($repository);
+
+        // Act
+        $user_id = $service->createUser($first_name, $last_name, $job);
+
+        // Expect
+        expect($user_id)->not->toBeEmpty();
+    })->with([['Mario', 'Rossi', 'Developer']]);
+});
+
 describe('findUser', function () {
     it('retrieves a single user by ID', function (int $id, string $email, string $first_name, string $last_name, string $avatar) {
 
