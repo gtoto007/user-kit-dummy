@@ -8,11 +8,16 @@ use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use stdClass;
-use Toto\UserKit\Exceptions\HttpResponseException;
-use Toto\UserKit\Exceptions\UserNotCreatedException;
-use Toto\UserKit\Exceptions\UserNotFoundException;
+use Toto\UserKit\Exceptions\Api\ApiException;
+use Toto\UserKit\Exceptions\Api\BadRequestException;
+use Toto\UserKit\Exceptions\Api\ResourceNotCreatedException;
+use Toto\UserKit\Exceptions\Api\ResourceNotFoundException;
+use Toto\UserKit\Exceptions\Api\ServerErrorException;
+use Toto\UserKit\Exceptions\Api\UnauthorizedException;
+
 
 /**
  *
@@ -50,25 +55,66 @@ class UserRepository
      * @param int $id The ID of the user.
      *
      * @return stdClass The user data.
-     * @throws UserNotFoundException If the user was not found.
-     *
-     * @throws ClientExceptionInterface|HttpResponseException If there was an error making the request.
+     * @throws ResourceNotFoundException when user with $id doesn't exist
+     * @throws BadRequestException  when the HTTP response status code is 400.
+     * @throws UnauthorizedException when the HTTP response status code start with 401.
+     * @throws ServerErrorException when the HTTP response status code start with 5**.
+     * @throws ApiException  in all other cases or when `sendRequest` method throws a `ClientExceptionInterface`.
      */
     public function find(int $id): stdClass
     {
         $request = $this->requestFactory->createRequest('GET', self::BASE_URL."/$id");
-        $response = $this->httpClient->sendRequest($request);
-        $body = json_decode($response->getBody()->getContents());
+        $response = $this->sendRequest($request);
 
-        if ($response->getStatusCode() === 404 || ($response->getStatusCode() === 200 && ! isset($body->data))) {
-            throw new UserNotFoundException("user with id $id does not exist");
+        switch ($response->getStatusCode()) {
+            case 200:
+                $body = json_decode($response->getBody()->getContents());
+                if (empty($body) || ! isset($body->data)) {
+                    throw new ResourceNotFoundException($request, $response, "user with id $id does not exist");
+                }
+                return $body->data;
+            case 404:
+                throw new ResourceNotFoundException($request, $response, "user with id $id does not exist");
+            default:
+                $this->throwAppropriateApiException($request, $response);
         }
+    }
 
-        if ($response->getStatusCode() !== 200) {
-            throw new HttpResponseException($request, $response);
+    /**
+     * This method sends a request using the HTTP client. If the client throws an exception, it is caught and wrapped into an ApiException
+     * @param RequestInterface $request The request to be sent.
+     * @return ResponseInterface The response from the HTTP client.
+     * @throws ApiException If the HTTP client throws an exception, it is caught and wrapped in an ApiException.
+     */
+    private function sendRequest(RequestInterface $request): ResponseInterface
+    {
+        try {
+            return $this->httpClient->sendRequest($request);
+        } catch (ClientExceptionInterface $e) {
+            throw new ApiException(request: $request, previous: $e);
         }
+    }
 
-        return $body->data;
+
+    /**
+     * @throws BadRequestException  when the HTTP response status code is 400.
+     * @throws UnauthorizedException when the HTTP response status code start with 401.
+     * @throws ServerErrorException when the HTTP response status code start with 5**.
+     * @throws ApiException  in all other cases
+     */
+    private function throwAppropriateApiException(RequestInterface $request, ResponseInterface $response)
+    {
+
+        if ($response->getStatusCode() == 400) {
+            throw new BadRequestException($request, $response);
+        }
+        if ($response->getStatusCode() == 401) {
+            throw new UnauthorizedException($request, $response);
+        }
+        if ($response->getStatusCode() >= 500 && $response->getStatusCode() < 600) {
+            throw new ServerErrorException($request, $response);
+        }
+        throw new ApiException($request, $response);
     }
 
     /**
@@ -78,8 +124,10 @@ class UserRepository
      * @param int $per_page The number of users per page.
      *
      * @return stdClass The paginated user data.
-     * @throws ClientExceptionInterface
-     * @throws HttpResponseException
+     * @throws BadRequestException  when the HTTP response status code is 400.
+     * @throws UnauthorizedException when the HTTP response status code start with 401.
+     * @throws ServerErrorException when the HTTP response status code start with 5**.
+     * @throws ApiException  in all other cases or when `sendRequest` method throws a `ClientExceptionInterface`.
      */
     public function paginate(int $page = 1, int $per_page = 6): stdClass
     {
@@ -88,13 +136,14 @@ class UserRepository
             'per_page' => $per_page,
         ]);
         $request = $this->requestFactory->createRequest('GET', self::BASE_URL.'?'.$queryParams);
-        $response = $this->httpClient->sendRequest($request);
 
+        $response = $this->sendRequest($request);
         if ($response->getStatusCode() !== 200) {
-            throw new HttpResponseException($request, $response);
+            $this->throwAppropriateApiException($request, $response);
         }
         return json_decode($response->getBody()->getContents());
     }
+
 
     /**
      * Create a new user.
@@ -104,8 +153,11 @@ class UserRepository
      * @param string $job The job of the user.
      *
      * @return stdClass The created user data.
-     * @throws UserNotCreatedException|ClientExceptionInterface|HttpResponseException If the user could not be created.
-     *
+     * @throws ResourceNotCreatedException when the body response does not contain a user id
+     * @throws BadRequestException  when the HTTP response status code is 400.
+     * @throws UnauthorizedException when the HTTP response status code start with 401.
+     * @throws ServerErrorException when the HTTP response status code start with 5**.
+     * @throws ApiException  in all other cases or when `sendRequest` method throws a `ClientExceptionInterface`.
      */
     public function create(string $first_name, string $last_name, string $job): stdClass
     {
@@ -116,21 +168,24 @@ class UserRepository
         ];
 
         $request = $this->createPostRequest($data);
-        $response = $this->httpClient->sendRequest($request);
+        $response = $this->sendRequest($request);
 
         if ($response->getStatusCode() !== 201) {
-            throw new HttpResponseException($request, $response);
+            $this->throwAppropriateApiException($request, $response);
         }
-
         $body = json_decode($response->getBody()->getContents());
 
-        if (! isset($body->id)) {
-            throw new UserNotCreatedException("User creation failed: ID does not exist");
+        if (empty($body) || ! isset($body->id)) {
+            throw new ResourceNotCreatedException($request, $response, "User creation failed: ID does not exist");
         }
         return $body;
     }
 
-    private function createPostRequest($data): RequestInterface
+    /**
+     * @param array $data
+     * @return RequestInterface
+     */
+    private function createPostRequest(array $data): RequestInterface
     {
         $json = json_encode($data);
         $body = $this->streamFactory->createStream($json);

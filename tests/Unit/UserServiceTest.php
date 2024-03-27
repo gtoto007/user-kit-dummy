@@ -2,11 +2,12 @@
 
 use Toto\UserKit\DTOs\Paginator;
 use Toto\UserKit\DTOs\UserDto;
-use Toto\UserKit\Exceptions\UserNotFoundException;
-use Toto\UserKit\Services\UserService;
+use Toto\UserKit\Exceptions\Api\ResourceNotCreatedException;
+use Toto\UserKit\Exceptions\Api\ResourceNotFoundException;
 
 
 describe('createUser', function () {
+
     it('creates a new user', function ($first_name, $last_name, $job) {
 
         // Setup
@@ -19,24 +20,29 @@ describe('createUser', function () {
         expect($user_id)->not->toBeEmpty();
     })->with([['Mario', 'Rossi', 'Developer']]);
 
-    it('throws HttpResponseException when status_code does not equal 200', function ($status_code) {
-
+    it('throws ResourceNotCreatedException when id does not exist in body response', function () {
         // Setup
-        $userService = createUserServiceMockWithCustomHttpResponse($status_code);
-
-        // Act
-        $userService->createUser("first", "last", "job");
-
-    })->with([400, 500, 504])->throws(\Toto\UserKit\Exceptions\HttpResponseException::class);
-
-    it('throws UserNotCreatedException when id does not exist in body response', function () {
-        // Setup
-        $service = createUserServiceMockWithCustomHttpResponse(status_code: 200, content: "{success:true}");
+        $service = createUserServiceMockWithCustomHttpResponse(status_code: 201, content: "{success:true}");
 
         // Act
         $service->createUser("first", "last", "job");
 
-    })->throws(\Toto\UserKit\Exceptions\HttpResponseException::class);
+    })->throws(ResourceNotCreatedException::class);
+
+
+    foreach (getErrorCodes() as $statusCode => $exception) {
+        it("throws {$exception} when status_code equals {$statusCode}", function () use ($statusCode, $exception) {
+
+            // Setup
+            $userService = createUserServiceMockWithCustomHttpResponse(status_code: $statusCode, content: "{}");
+
+            // Act
+            $userService->createUser("first", "last", "job");
+
+        })->throws($exception);
+    }
+
+
 });
 
 describe('findUser', function () {
@@ -46,8 +52,7 @@ describe('findUser', function () {
         $service = createUserServiceMock();
 
         // Act
-        /* When you call the findUser method, it uses a mocked sendRequest function to get user data from a JSON file at
-        /tests/Stubs/api-users/page=1&per_page=6.json.*/
+        /* When you call the findUser method, it uses a mocked sendRequest function to get user data from a JSON file at /tests/Stubs/api-users/page=1&per_page=6.json.*/
         $user = $service->findUser($id);
 
         // Expect
@@ -79,7 +84,7 @@ describe('findUser', function () {
 });
 
 describe('findUserOrFail', function () {
-    it('throws a UserNotFoundException when the user_id does not exist', function ($user_id) {
+    it('throws a ResourceNotFoundException when the user_id does not exist', function ($user_id) {
 
         // Setup
         $service = createUserServiceMock();
@@ -87,17 +92,21 @@ describe('findUserOrFail', function () {
         // Act
         $service->findUserOrFail($user_id);
 
-    })->with([100, 0, -1])->throws(UserNotFoundException::class);
+    })->with([100, 0, -1])->throws(ResourceNotFoundException::class);
 
-    it('throws HttpResponseException when status_code does not equal 200', function ($status_code) {
 
-        // Setup
-        $service = createUserServiceMockWithCustomHttpResponse($status_code);
+    foreach (getErrorCodes() as $statusCode => $exception) {
+        it("throws {$exception} when status_code equals {$statusCode}", function () use ($statusCode, $exception) {
 
-        // Act
-        $service->findUserOrFail(1);
+            // Setup
+            $userService = createUserServiceMockWithCustomHttpResponse(status_code: $statusCode, content: "{}");
 
-    })->with([400, 500, 504])->throws(\Toto\UserKit\Exceptions\HttpResponseException::class);
+            // Act
+            $userService->findUserOrFail(1);
+
+        })->throws($exception);
+    }
+
 });
 
 describe('paginate', function () {
@@ -136,4 +145,16 @@ describe('paginate', function () {
         [1, 0, 2, ['Bluth', 'Weaver', 'Wong', 'Holt', 'Morris', 'Ramos']],
         [1, -1, 2, ['Bluth', 'Weaver', 'Wong', 'Holt', 'Morris', 'Ramos']],
     ]);
+
+    foreach (getErrorCodes() as $statusCode => $exception) {
+        it("throws {$exception} when status_code equals {$statusCode}", function () use ($statusCode, $exception) {
+
+            // Setup
+            $userService = createUserServiceMockWithCustomHttpResponse(status_code: $statusCode, content: "{}");
+
+            // Act
+            $userService->paginate(1, 12);
+
+        })->throws($exception);
+    }
 });

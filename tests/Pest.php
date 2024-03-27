@@ -24,8 +24,11 @@
 |
 */
 
-use GuzzleHttp\Psr7\HttpFactory;
 use Toto\Tests\MockFactory;
+use Toto\UserKit\Exceptions\Api\ApiException;
+use Toto\UserKit\Exceptions\Api\BadRequestException;
+use Toto\UserKit\Exceptions\Api\ServerErrorException;
+use Toto\UserKit\Exceptions\Api\UnauthorizedException;
 use Toto\UserKit\Repositories\UserRepository;
 use Toto\UserKit\Services\UserService;
 
@@ -42,14 +45,32 @@ use Toto\UserKit\Services\UserService;
 */
 
 
-function createUserServiceMock(): UserService{
-    $repository = new UserRepository(MockFactory::createHttpClient());
+function createUserServiceMock(): UserService
+{
+    $mockHttpClient= MockFactory::createHttpClient();
+    $repository = new UserRepository($mockHttpClient);
     return new UserService($repository);
 }
 
-function createUserServiceMockWithCustomHttpResponse(int $status_code, string $content = "{}"): UserService{
-    $repository = new UserRepository(MockFactory::createHttpClientWithCustomResponse($status_code, $content));
+function createUserServiceMockWithCustomHttpResponse(int $status_code, string $content = "{}"): UserService
+{
+    $mockHttpClient = MockFactory::createHttpClientWithCustomResponse($status_code, $content);
+    $repository = new UserRepository($mockHttpClient);
     return new UserService($repository);
 }
+
+/**
+ * @return string[]
+ */
+function getErrorCodes(): array
+{
+    return [
+        400 => BadRequestException::class,
+        401 => UnauthorizedException::class,
+        412 => ApiException::class,
+        500 => ServerErrorException::class,
+    ];
+}
+
 
 

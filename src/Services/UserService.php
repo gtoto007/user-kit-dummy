@@ -3,11 +3,14 @@
 namespace Toto\UserKit\Services;
 
 
-use Psr\Http\Client\ClientExceptionInterface;
 use Toto\UserKit\DTOs\Paginator;
 use Toto\UserKit\DTOs\UserDto;
-use Toto\UserKit\Exceptions\UserNotCreatedException;
-use Toto\UserKit\Exceptions\UserNotFoundException;
+use Toto\UserKit\Exceptions\Api\ApiException;
+use Toto\UserKit\Exceptions\Api\BadRequestException;
+use Toto\UserKit\Exceptions\Api\ResourceNotCreatedException;
+use Toto\UserKit\Exceptions\Api\ResourceNotFoundException;
+use Toto\UserKit\Exceptions\Api\ServerErrorException;
+use Toto\UserKit\Exceptions\Api\UnauthorizedException;
 use Toto\UserKit\Repositories\UserRepository;
 
 
@@ -37,13 +40,12 @@ class UserService
      *
      * @param int $id The ID of the user to find.
      * @return UserDto|null The found user as a Data Transfer Object, or null if the user is not found.
-     * @throws ClientExceptionInterface If there was an error during the execution of the request.
      */
     public function findUser(int $id): ?UserDto
     {
         try {
             return $this->findUserOrFail($id);
-        } catch (UserNotFoundException $e) {
+        } catch (ApiException $e) {
             return null;
         }
     }
@@ -53,8 +55,11 @@ class UserService
      *
      * @param int $id The ID of the user to find.
      * @return UserDto The found user as a Data Transfer Object.
-     * @throws UserNotFoundException If the user with the given ID is not found.
-     * @throws ClientExceptionInterface If there was an error during the execution of the request.
+     * @throws ResourceNotFoundException when user with $id doesn't exist
+     * @throws BadRequestException  when the HTTP response status code is 400.
+     * @throws UnauthorizedException when the HTTP response status code start with 401.
+     * @throws ServerErrorException when the HTTP response status code start with 5**.
+     * @throws ApiException  in all other cases
      */
     public function findUserOrFail(int $id): UserDto
     {
@@ -68,6 +73,10 @@ class UserService
      * @param int $page The page number to retrieve. Defaults to Paginator::DEFAULT_PAGE.
      * @param int $per_page The number of users per page. Defaults to Paginator::DEFAULT_PER_PAGE.
      * @return Paginator A Paginator object containing the paginated results.
+     * @throws BadRequestException  when the HTTP response status code is 400.
+     * @throws UnauthorizedException when the HTTP response status code start with 401.
+     * @throws ServerErrorException when the HTTP response status code start with 5**.
+     * @throws ApiException  in all other cases
      */
 
     public function paginate(int $page = Paginator::DEFAULT_PAGE, int $per_page = Paginator::DEFAULT_PER_PAGE): Paginator
@@ -103,7 +112,12 @@ class UserService
      * @param string $last_name The last name of the user.
      * @param string $job The job of the user.
      * @return int The ID of the newly created user.
-     * @throws UserNotCreatedException If there was an error creating the user.
+     *
+     * @throws ResourceNotCreatedException when the body response does not contain a user id
+     * @throws BadRequestException  when the HTTP response status code is 400.
+     * @throws UnauthorizedException when the HTTP response status code start with 401.
+     * @throws ServerErrorException when the HTTP response status code start with 5**.
+     * @throws ApiException  in all other cases
      */
     public function createUser(string $first_name, string $last_name, string $job): int
     {
