@@ -8,9 +8,9 @@ use Toto\UserKit\Services\UserService;
 
 describe('createUser', function () {
     it('creates a new user', function ($first_name, $last_name, $job) {
+
         // Setup
-        $repository = createUserRepositoryMock();
-        $service = new UserService($repository);
+        $service = createUserServiceMock();
 
         // Act
         $user_id = $service->createUser($first_name, $last_name, $job);
@@ -20,22 +20,21 @@ describe('createUser', function () {
     })->with([['Mario', 'Rossi', 'Developer']]);
 
     it('throws HttpResponseException when status_code does not equal 200', function ($status_code) {
+
         // Setup
-        $repository = createUserRepoMockWithCustomResponse($status_code);
-        $service = new UserService($repository);
+        $userService = createUserServiceMockWithCustomHttpResponse($status_code);
 
         // Act
-        $service->createUser("first", "last", "job");
+        $userService->createUser("first", "last", "job");
 
     })->with([400, 500, 504])->throws(\Toto\UserKit\Exceptions\HttpResponseException::class);
 
     it('throws UserNotCreatedException when id does not exist in body response', function () {
         // Setup
-        $repository = createUserRepoMockWithCustomResponse(status_code: 200, content: "{success:true}");
-        $service = new UserService($repository);
+        $service = createUserServiceMockWithCustomHttpResponse(status_code: 200, content: "{success:true}");
 
         // Act
-        $user_id = $service->createUser("first", "last", "job");
+        $service->createUser("first", "last", "job");
 
     })->throws(\Toto\UserKit\Exceptions\HttpResponseException::class);
 });
@@ -44,8 +43,7 @@ describe('findUser', function () {
     it('retrieves a single user by ID', function (int $id, string $email, string $first_name, string $last_name, string $avatar) {
 
         // Setup
-        $repository = createUserRepositoryMock();
-        $service = new UserService($repository);
+        $service = createUserServiceMock();
 
         // Act
         $user = $service->findUser($id);
@@ -65,8 +63,7 @@ describe('findUser', function () {
     it('returns null when the userId does not exist', function (int $user_id) {
 
         // Setup
-        $repository = createUserRepositoryMock();
-        $service = new UserService($repository);
+        $service = createUserServiceMock();
 
         // Act
         $user = $service->findUser($user_id);
@@ -83,8 +80,7 @@ describe('findUserOrFail', function () {
     it('throws a UserNotFoundException when the user_id does not exist', function ($user_id) {
 
         // Setup
-        $repository = createUserRepositoryMock();
-        $service = new UserService($repository);
+        $service = createUserServiceMock();
 
         // Act
         $service->findUserOrFail($user_id);
@@ -92,9 +88,9 @@ describe('findUserOrFail', function () {
     })->with([100, 0, -1])->throws(UserNotFoundException::class);
 
     it('throws HttpResponseException when status_code does not equal 200', function ($status_code) {
+
         // Setup
-        $repository = createUserRepoMockWithCustomResponse($status_code,"{}");
-        $service = new UserService($repository);
+        $service = createUserServiceMockWithCustomHttpResponse($status_code);
 
         // Act
         $service->findUserOrFail(1);
@@ -106,8 +102,8 @@ describe('paginate', function () {
     it('retrieves a paginated list of users', function (int $page, int $per_page, int $total_pages_expected, array $expected_users) {
 
         // Setup
-        $repository = createUserRepositoryMock();
-        $service = new UserService($repository);
+        $service = createUserServiceMock();
+
         $total_users_expected = 12;
         $per_page_expected = $per_page > 0 ? $per_page : Paginator::DEFAULT_PER_PAGE;
         $page_expected = $page > 0 ? $page : Paginator::DEFAULT_PAGE;

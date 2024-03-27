@@ -27,6 +27,7 @@
 use GuzzleHttp\Psr7\HttpFactory;
 use Toto\Tests\MockFactory;
 use Toto\UserKit\Repositories\UserRepository;
+use Toto\UserKit\Services\UserService;
 
 
 /*
@@ -40,14 +41,15 @@ use Toto\UserKit\Repositories\UserRepository;
 |
 */
 
-function createUserRepositoryMock(): UserRepository
-{
-    return new UserRepository(MockFactory::createHttpClient());
+
+function createUserServiceMock(): UserService{
+    $repository = new UserRepository(MockFactory::createHttpClient());
+    return new UserService($repository);
 }
 
-function createUserRepoMockWithCustomResponse(int $status_code, string $content = "{}",): UserRepository
-{
-    return new UserRepository(MockFactory::createHttpClientWithCustomResponse($status_code, $content));
+function createUserServiceMockWithCustomHttpResponse(int $status_code, string $content = "{}"): UserService{
+    $repository = new UserRepository(MockFactory::createHttpClientWithCustomResponse($status_code, $content));
+    return new UserService($repository);
 }
 
 
