@@ -46,6 +46,8 @@ describe('findUser', function () {
         $service = createUserServiceMock();
 
         // Act
+        /* When you call the findUser method, it uses a mocked sendRequest function to get user data from a JSON file at
+        /tests/Stubs/api-users/page=1&per_page=6.json.*/
         $user = $service->findUser($id);
 
         // Expect
