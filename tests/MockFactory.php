@@ -19,7 +19,7 @@ class MockFactory
             ->andReturnUsing(function (RequestInterface $request) {
                 if (preg_match('@/api/users(/(\d+))?$@', $request->getUri()->getPath(), $matches)) {
                     if (isset($matches[2])) {
-                        return self::mockGetUserResponse(userId: $matches[2]);
+                        return self::mockGetUserResponse(userId: intval($matches[2]));
                     } else if ($request->getMethod() == 'GET') {
                         return self::mockGetUsersResponse($request);
                     } else if ($request->getMethod() == 'POST') {
@@ -32,7 +32,14 @@ class MockFactory
         return $mockHttpClient;
     }
 
-    private static function mockGetUserResponse($userId): Response
+    public static function createHttpClientWithCustomResponse(int $status_code, string $content)
+    {
+        $mockHttpClient = Mockery::mock(ClientInterface::class);
+        $mockHttpClient->shouldReceive('sendRequest')->andReturn(self::createHttpResponse($content, $status_code));
+        return $mockHttpClient;
+    }
+
+    private static function mockGetUserResponse(int $userId): Response
     {
         $user = self::findStubUser($userId);
         if ($user) {
@@ -41,7 +48,7 @@ class MockFactory
             return self::createHttpResponse("{}");
     }
 
-    private static function findStubUser($userId)
+    private static function findStubUser(int $userId)
     {
         $page = json_decode(self::readFile('Stubs/api-users/page=1&per_page=6.json'), true);
         foreach ($page["data"] as $user) {
@@ -58,17 +65,17 @@ class MockFactory
     }
 
 
-    private static function readFile($file): string|false
+    private static function readFile(string $file): string|false
     {
         return file_get_contents(__DIR__.'/'.$file);
     }
 
-    private static function fileExists($file): bool
+    private static function fileExists(string $file): bool
     {
         return file_exists(__DIR__.'/'.$file);
     }
 
-    private static function createHttpResponse($content, $status = 200): Response
+    private static function createHttpResponse(string $content, int $status = 200): Response
     {
         return new Response($status, [], (new HttpFactory())->createStream($content));
     }
@@ -92,7 +99,7 @@ class MockFactory
         $requestData = json_decode($request->getBody()->getContents(), true);
         $userId = rand(1, 1000);
         $responseData = array_merge(['id' => $userId], $requestData);
-        return self::createHttpResponse(json_encode($responseData));
+        return self::createHttpResponse(json_encode($responseData), 201);
 
     }
 

@@ -7,8 +7,10 @@ use Http\Discovery\Psr18ClientDiscovery;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use stdClass;
+use Toto\UserKit\Exceptions\HttpResponseException;
 use Toto\UserKit\Exceptions\UserNotCreatedException;
 use Toto\UserKit\Exceptions\UserNotFoundException;
 
@@ -50,17 +52,22 @@ class UserRepository
      * @return stdClass The user data.
      * @throws UserNotFoundException If the user was not found.
      *
-     * @throws ClientExceptionInterface If there was an error making the request.
+     * @throws ClientExceptionInterface|HttpResponseException If there was an error making the request.
      */
     public function find(int $id): stdClass
     {
         $request = $this->requestFactory->createRequest('GET', self::BASE_URL."/$id");
         $response = $this->httpClient->sendRequest($request);
         $body = json_decode($response->getBody()->getContents());
-        //TODO: add  status code check
-        if (! isset($body->data)) {
+
+        if ($response->getStatusCode() === 404 || ($response->getStatusCode() === 200 && ! isset($body->data))) {
             throw new UserNotFoundException("user with id $id does not exist");
         }
+
+        if ($response->getStatusCode() !== 200) {
+            throw new HttpResponseException($request, $response);
+        }
+
         return $body->data;
     }
 
@@ -71,8 +78,10 @@ class UserRepository
      * @param int $per_page The number of users per page.
      *
      * @return stdClass The paginated user data.
+     * @throws ClientExceptionInterface
+     * @throws HttpResponseException
      */
-    public function paginate(int $page = 1, int $per_page = 6)
+    public function paginate(int $page = 1, int $per_page = 6): stdClass
     {
         $queryParams = http_build_query([
             'page' => $page,
@@ -80,7 +89,10 @@ class UserRepository
         ]);
         $request = $this->requestFactory->createRequest('GET', self::BASE_URL.'?'.$queryParams);
         $response = $this->httpClient->sendRequest($request);
-        //TODO: add check status code
+
+        if ($response->getStatusCode() !== 200) {
+            throw new HttpResponseException($request, $response);
+        }
         return json_decode($response->getBody()->getContents());
     }
 
@@ -92,10 +104,10 @@ class UserRepository
      * @param string $job The job of the user.
      *
      * @return stdClass The created user data.
-     * @throws UserNotCreatedException|ClientExceptionInterface If the user could not be created.
+     * @throws UserNotCreatedException|ClientExceptionInterface|HttpResponseException If the user could not be created.
      *
      */
-    public function create(string $first_name, string $last_name, string $job)
+    public function create(string $first_name, string $last_name, string $job): stdClass
     {
         $data = [
             'first_name' => $first_name,
@@ -103,16 +115,12 @@ class UserRepository
             'job' => $job,
         ];
 
-        $json = json_encode($data);
-        $body = $this->streamFactory->createStream($json);
-
-        $request = $this->requestFactory->createRequest('POST', self::BASE_URL)
-            ->withBody($body)
-            ->withHeader('Content-Type', 'application/json');
-
+        $request = $this->createPostRequest($data);
         $response = $this->httpClient->sendRequest($request);
 
-        //TODO: add check status code
+        if ($response->getStatusCode() !== 201) {
+            throw new HttpResponseException($request, $response);
+        }
 
         $body = json_decode($response->getBody()->getContents());
 
@@ -120,5 +128,16 @@ class UserRepository
             throw new UserNotCreatedException("User creation failed: ID does not exist");
         }
         return $body;
+    }
+
+    private function createPostRequest($data): RequestInterface
+    {
+        $json = json_encode($data);
+        $body = $this->streamFactory->createStream($json);
+
+        return $this->requestFactory->createRequest('POST', self::BASE_URL)
+            ->withBody($body)
+            ->withHeader('Content-Type', 'application/json');
+
     }
 }

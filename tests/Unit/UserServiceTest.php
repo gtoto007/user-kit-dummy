@@ -18,6 +18,26 @@ describe('createUser', function () {
         // Expect
         expect($user_id)->not->toBeEmpty();
     })->with([['Mario', 'Rossi', 'Developer']]);
+
+    it('throws HttpResponseException when status_code does not equal 200', function ($status_code) {
+        // Setup
+        $repository = createUserRepoMockWithCustomResponse($status_code);
+        $service = new UserService($repository);
+
+        // Act
+        $service->createUser("first", "last", "job");
+
+    })->with([400, 500, 504])->throws(\Toto\UserKit\Exceptions\HttpResponseException::class);
+
+    it('throws UserNotCreatedException when id does not exist in body response', function () {
+        // Setup
+        $repository = createUserRepoMockWithCustomResponse(status_code: 200, content: "{success:true}");
+        $service = new UserService($repository);
+
+        // Act
+        $user_id = $service->createUser("first", "last", "job");
+
+    })->throws(\Toto\UserKit\Exceptions\HttpResponseException::class);
 });
 
 describe('findUser', function () {
@@ -56,10 +76,11 @@ describe('findUser', function () {
 
     })->with([100, 0, -1]);
 
+
 });
 
 describe('findUserOrFail', function () {
-    it('throws a UserNotFoundException when the userId does not exist', function ($user_id) {
+    it('throws a UserNotFoundException when the user_id does not exist', function ($user_id) {
 
         // Setup
         $repository = createUserRepositoryMock();
@@ -69,6 +90,16 @@ describe('findUserOrFail', function () {
         $service->findUserOrFail($user_id);
 
     })->with([100, 0, -1])->throws(UserNotFoundException::class);
+
+    it('throws HttpResponseException when status_code does not equal 200', function ($status_code) {
+        // Setup
+        $repository = createUserRepoMockWithCustomResponse($status_code,"{}");
+        $service = new UserService($repository);
+
+        // Act
+        $service->findUserOrFail(1);
+
+    })->with([400, 500, 504])->throws(\Toto\UserKit\Exceptions\HttpResponseException::class);
 });
 
 describe('paginate', function () {

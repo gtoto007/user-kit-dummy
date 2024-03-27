@@ -45,3 +45,9 @@ function createUserRepositoryMock(): UserRepository
     return new UserRepository(MockFactory::createHttpClient());
 }
 
+function createUserRepoMockWithCustomResponse(int $status_code, string $content = "{}",): UserRepository
+{
+    return new UserRepository(MockFactory::createHttpClientWithCustomResponse($status_code, $content));
+}
+
+
