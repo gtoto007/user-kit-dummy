@@ -126,7 +126,8 @@ describe('paginate', function () {
         expect($paginator->page)->toEqual($page_expected)
             ->and($paginator->per_page)->toEqual($per_page_expected)
             ->and($paginator->total_pages)->toEqual($total_pages_expected)
-            ->and($paginator->total)->toEqual($total_users_expected);
+            ->and($paginator->total)->toEqual($total_users_expected)
+            ->and($paginator->data)->toHaveCount(count($expected_users));
 
         foreach ($paginator->data as $index => $user) {
             expect($user)->toBeInstanceOf(UserDto::class)
@@ -140,9 +141,10 @@ describe('paginate', function () {
         [1000, 10, 2, []],
         //INVALID CASE:
         [0, 0, 2, ['Bluth', 'Weaver', 'Wong', 'Holt', 'Morris', 'Ramos']],
-        [0, 2, 6, ['Bluth', 'Weaver']],
-        [-1, 2, 6, ['Bluth', 'Weaver']],
+        [0, 6, 2, ['Bluth', 'Weaver', 'Wong', 'Holt', 'Morris', 'Ramos']],
         [1, 0, 2, ['Bluth', 'Weaver', 'Wong', 'Holt', 'Morris', 'Ramos']],
+        [-1, -1, 2, ['Bluth', 'Weaver', 'Wong', 'Holt', 'Morris', 'Ramos']],
+        [-1, 6, 2,['Bluth', 'Weaver', 'Wong', 'Holt', 'Morris', 'Ramos']],
         [1, -1, 2, ['Bluth', 'Weaver', 'Wong', 'Holt', 'Morris', 'Ramos']],
     ]);
 
