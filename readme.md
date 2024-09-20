@@ -11,7 +11,7 @@ The service should provide:
 - A method to create a new user, providing a name and job, and returning a User ID.
 - All users returned by the service must be converted into well defined DTO models implementing JSON serializable interfaces and supporting conversion to a standard array structure.
 
-### 👨‍💻 For Developers and Testers:
+### 👨‍💻 Development and Testing Setup
 
 ##### 1. Clone the repository
 ```
