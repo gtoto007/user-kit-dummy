@@ -45,7 +45,7 @@ composer require toto/user-kit
 ```
 #####  2. Install an HTTP Client for Production Use
 For production use, ensure that an HTTP client package is installed (e.g., `composer require guzzlehttp/guzzle`).
-This is because the package is designed to be agnostic of any specific HTTP client while complying with PSR-18 (HTTP Client) and PSR-7 (HTTP Message) standards. This approach ensures that it can work flexibly and interoperably with any HTTP client that follows these specifications.
+This is because the package is designed to be agnostic of any specific HTTP client while complying with PSR-18 (HTTP Client) and PSR-17 (HTTP Factories) standards. This approach ensures that it can work flexibly and interoperably with any HTTP client that follows these specifications.
 
 
 ### 📦 How to Use the Package
