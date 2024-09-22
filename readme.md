@@ -245,8 +245,8 @@ class UserRepository {
 ```
 
 ---
-### 4. Bonus: Is this package independent of a specific HTTP client?
-Yes, this package is designed to be independent of any specific HTTP client, adhering to the PSR-18 (HTTP Client) and PSR-17 (HTTP Factories) standards. This independence ensures flexibility and ease of integration into various projects.
+### 4. Bonus: How to make the package independent of the specific http client
+This package is designed to be independent of any specific HTTP client, adhering to the PSR-18 (HTTP Client) and PSR-17 (HTTP Factories) standards. This independence ensures flexibility and ease of integration into various projects.
 
 At the same time, to streamline the process, when you instantiate the `UserService` or `UserRepository`, you don't need to specify the HTTP Client interface explicitly, thanks to a discovery system implemented in UserRepository:
 
